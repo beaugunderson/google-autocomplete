@@ -37,25 +37,55 @@ const nouns = getLines('./nouns.txt');
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
 
   const browser = await puppeteer.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
     defaultViewport: {
       deviceScaleFactor: 2,
       width: 1600,
       height: 1600
     }
   });
+
   const page = await browser.newPage();
-  await page.goto('https://google.com');
+
+  await page.setUserAgent(
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36');
+
+  const cookies = '';
+
+  for (let cookie of cookies.split('; ')) {
+    const [name, value] = cookie.split('=');
+
+    await page.setCookie({
+      name,
+      value,
+      domain: '.google.com',
+      expires: (new Date().valueOf() / 1000) + (24 * 60 * 60)
+    });
+  }
+
+  await page.goto('https://google.com/');
 
   await page.type('input[name="q"]', question());
   await wait(1000);
 
-  await page.$eval('div[aria-label="Search by voice"]', e => e.parentElement.remove())
-  await page.$eval('center', e => e.parentElement.remove())
+  try {
+    await page.$eval('div[aria-label="Search by voice"]', e => e.parentElement.remove())
+  } catch (e) {
+    // pass
+  }
+
+  try {
+    await page.$eval('center', e => e.parentElement.remove())
+  } catch (e) {
+    // pass
+  }
 
   await page.$$eval('a[href="#"]', links => links.forEach(link => {
     link.innerHTML = '&nbsp;';
     link.style.marginTop = '15px';
   }))
+
+  await page.screenshot({path: 'page.png'});
 
   const form = await page.$('#searchform');
   await form.screenshot({path: 'google.png'});

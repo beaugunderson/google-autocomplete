@@ -3,6 +3,8 @@
 const fs = require('fs');
 const Mastodon = require('mastodon');
 
+require('dotenv').config();
+
 const M = new Mastodon({
   access_token: process.env.ACCESS_TOKEN,
 });
